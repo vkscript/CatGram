@@ -1,5 +1,5 @@
 //
-//  PostDetailsPresentor.swift
+//  PostDetailsPresenter.swift
 //  CatGram
 //
 

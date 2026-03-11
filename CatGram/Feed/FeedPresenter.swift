@@ -1,5 +1,5 @@
 //
-//  FeedPresentor.swift
+//  FeedPresenter.swift
 //  CatGram
 //
 

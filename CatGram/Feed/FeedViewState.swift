@@ -4,9 +4,8 @@
 //
 
 enum FeedViewState: Equatable {
-    case initial
     case loading
-    case content([Post])
+    case content([PostViewModel])
     case empty
     case error(message: String)
 }

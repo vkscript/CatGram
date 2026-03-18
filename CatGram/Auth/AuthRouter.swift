@@ -14,23 +14,23 @@ final class AuthRouterImpl: AuthRouter {
     weak var viewController: UIViewController?
 
     func openMainScreen() {
+        let networkClient: NetworkClient = Configuration.useLocalNetworkClient
+            ? LocalFileNetworkClient()
+            : URLSessionNetworkClient()
 
-        let vc = UIViewController()
-        vc.view.backgroundColor = .systemBackground
+        let service = FeedServiceImpl(networkClient: networkClient)
+        let feedRouter = FeedRouterImpl()
 
-        let label = UILabel()
-        label.text = "Login success"
-        label.font = .systemFont(ofSize: 24, weight: .bold)
+        let view = FeedViewImpl()
+        feedRouter.viewController = view
 
-        vc.view.addSubview(label)
+        let feedPresenter = FeedPresenterImpl(
+            view: view,
+            service: service,
+            router: feedRouter
+        )
+        view.presenter = feedPresenter
 
-        label.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: vc.view.centerYAnchor)
-        ])
-
-        viewController?.navigationController?.pushViewController(vc, animated: true)
-
+        viewController?.navigationController?.pushViewController(view, animated: true)
     }
 }

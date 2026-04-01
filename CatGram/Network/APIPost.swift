@@ -1,13 +1,13 @@
 //
-//  Post.swift
+//  APIPost.swift
 //  CatGram
 //
 
 import Foundation
 
-struct Post: Equatable {
+struct APIPost: Decodable {
     let id: String
-    let author: String
+    let authorName: String
     let imageUrl: String
     let text: String
     let likesCount: Int

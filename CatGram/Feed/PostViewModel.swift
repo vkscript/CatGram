@@ -1,16 +1,13 @@
 //
-//  Post.swift
+//  PostViewModel.swift
 //  CatGram
 //
 
-import Foundation
-
-struct Post: Equatable {
+struct PostViewModel: Equatable {
     let id: String
     let author: String
-    let imageUrl: String
     let text: String
     let likesCount: Int
     let commentsCount: Int
-    let createdAt: Date
+    let createdAtString: String
 }

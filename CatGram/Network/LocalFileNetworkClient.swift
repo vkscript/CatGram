@@ -17,6 +17,7 @@ final class LocalFileNetworkClient: NetworkClient {
     }
 
     func get<T: Decodable>(_ url: URL) async throws -> T {
+        try await Task.sleep(nanoseconds: 1_000_000_000)
         let fileName = url.deletingPathExtension().lastPathComponent
 
         guard

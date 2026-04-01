@@ -62,13 +62,17 @@ class FeedPresenterImpl: FeedPresenter {
     }
     
     private func mapPostToViewModel(post: Post) -> PostViewModel {
-        .init(
+        // Конвертируем строку в URL для изображения
+        let imageUrl = URL(string: post.imageUrl)
+        
+        return PostViewModel(
             id: post.id,
             author: post.author,
             text: post.text,
             likesCount: post.likesCount,
             commentsCount: post.commentsCount,
             createdAtString: post.createdAt.formatted(),
+            imageUrl: imageUrl
         )
     }
 }

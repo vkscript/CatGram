@@ -3,6 +3,8 @@
 //  CatGram
 //
 
+import Foundation
+
 struct PostViewModel: Equatable {
     let id: String
     let author: String
@@ -10,4 +12,5 @@ struct PostViewModel: Equatable {
     let likesCount: Int
     let commentsCount: Int
     let createdAtString: String
+    let imageUrl: URL?
 }

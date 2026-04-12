@@ -4,5 +4,5 @@
 //
 
 enum Configuration {
-    static let useLocalNetworkClient: Bool = false
+    static let useLocalNetworkClient: Bool = true
 }

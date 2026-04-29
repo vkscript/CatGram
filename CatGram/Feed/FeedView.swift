@@ -15,10 +15,10 @@ final class FeedViewImpl: UIViewController, FeedView {
     
     private let tableView = UITableView()
     private let refreshControl = UIRefreshControl()
-    private let loadingIndicator = UIActivityIndicatorView(style: .large)
-    private let emptyStateLabel = UILabel()
-    private let errorStateLabel = UILabel()
-    private let retryButton = UIButton(type: .system)
+    
+    private var loadingView: DSLoadingView?
+    private var errorView: DSErrorView?
+    private var emptyView: DSEmptyView?
     
     private lazy var listManager = FeedListManager()
     private var currentState: FeedViewState = .loading
@@ -31,56 +31,16 @@ final class FeedViewImpl: UIViewController, FeedView {
     }
     
     private func setupUI() {
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = DS.Colors.background
         title = "Лента"
-        
-        // Setup loading indicator
-        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(loadingIndicator)
-        
-        // Setup empty state
-        emptyStateLabel.translatesAutoresizingMaskIntoConstraints = false
-        emptyStateLabel.text = "Нет постов"
-        emptyStateLabel.textAlignment = .center
-        emptyStateLabel.isHidden = true
-        view.addSubview(emptyStateLabel)
-        
-        // Setup error state
-        errorStateLabel.translatesAutoresizingMaskIntoConstraints = false
-        errorStateLabel.textAlignment = .center
-        errorStateLabel.numberOfLines = 0
-        errorStateLabel.isHidden = true
-        view.addSubview(errorStateLabel)
-        
-        // Setup retry button
-        retryButton.translatesAutoresizingMaskIntoConstraints = false
-        retryButton.setTitle("Повторить", for: .normal)
-        retryButton.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
-        retryButton.isHidden = true
-        view.addSubview(retryButton)
         
         // Setup tableView
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.isHidden = true
+        tableView.backgroundColor = DS.Colors.background
+        tableView.separatorColor = DS.Colors.separator
         view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            
-            emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            emptyStateLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 20),
-            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -20),
-            
-            errorStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            errorStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -30),
-            errorStateLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 20),
-            errorStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -20),
-            
-            retryButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            retryButton.topAnchor.constraint(equalTo: errorStateLabel.bottomAnchor, constant: 20),
-            
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -96,7 +56,8 @@ final class FeedViewImpl: UIViewController, FeedView {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 400
         
-        // Setup pull-to-refresh
+        // Setup pull-to-refresh с DS цветами
+        refreshControl.tintColor = DS.Colors.primary
         refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
         tableView.refreshControl = refreshControl
         
@@ -107,15 +68,12 @@ final class FeedViewImpl: UIViewController, FeedView {
         presenter.didPullToRefresh()
     }
     
-    @objc private func retryTapped() {
-        presenter.didLoad()
-    }
-    
     func render(_ state: FeedViewState) {
         currentState = state
         
         DispatchQueue.main.async {
             self.refreshControl.endRefreshing()
+            self.removeAllStateViews()
             
             switch state {
             case .loading:
@@ -130,44 +88,77 @@ final class FeedViewImpl: UIViewController, FeedView {
         }
     }
     
+    private func removeAllStateViews() {
+        loadingView?.removeFromSuperview()
+        errorView?.removeFromSuperview()
+        emptyView?.removeFromSuperview()
+        loadingView = nil
+        errorView = nil
+        emptyView = nil
+    }
+    
     private func showLoadingState() {
         tableView.isHidden = true
-        emptyStateLabel.isHidden = true
-        errorStateLabel.isHidden = true
-        retryButton.isHidden = true
-        loadingIndicator.isHidden = false
-        loadingIndicator.startAnimating()
+        
+        let loading = DSLoadingView(message: "Загружаем ленту...")
+        loading.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loading)
+        
+        NSLayoutConstraint.activate([
+            loading.topAnchor.constraint(equalTo: view.topAnchor),
+            loading.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            loading.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            loading.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        loadingView = loading
     }
     
     private func showContentState(posts: [PostViewModel]) {
-        loadingIndicator.stopAnimating()
-        loadingIndicator.isHidden = true
-        emptyStateLabel.isHidden = true
-        errorStateLabel.isHidden = true
-        retryButton.isHidden = true
         tableView.isHidden = false
-        
         listManager.setItems(posts)
         tableView.reloadData()
     }
     
     private func showEmptyState() {
-        loadingIndicator.stopAnimating()
-        loadingIndicator.isHidden = true
         tableView.isHidden = true
-        errorStateLabel.isHidden = true
-        retryButton.isHidden = true
-        emptyStateLabel.isHidden = false
+        
+        let empty = DSEmptyView(
+            title: "Нет постов",
+            message: "Здесь пока ничего нет. Попробуйте обновить ленту.",
+            icon: UIImage(systemName: "photo.on.rectangle.angled")
+        )
+        empty.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(empty)
+        
+        NSLayoutConstraint.activate([
+            empty.topAnchor.constraint(equalTo: view.topAnchor),
+            empty.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            empty.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            empty.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        emptyView = empty
     }
     
     private func showErrorState(message: String) {
-        loadingIndicator.stopAnimating()
-        loadingIndicator.isHidden = true
         tableView.isHidden = true
-        emptyStateLabel.isHidden = true
-        errorStateLabel.isHidden = false
-        retryButton.isHidden = false
-        errorStateLabel.text = message
+        
+        let error = DSErrorView(message: message)
+        error.translatesAutoresizingMaskIntoConstraints = false
+        error.onRetry = { [weak self] in
+            self?.presenter.didLoad()
+        }
+        view.addSubview(error)
+        
+        NSLayoutConstraint.activate([
+            error.topAnchor.constraint(equalTo: view.topAnchor),
+            error.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            error.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            error.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        errorView = error
     }
 }
 
